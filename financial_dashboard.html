@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Financial Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+        }
+
+        h1 {
+            margin-top: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            margin: 40px auto;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .price {
+            font-size: 26px;
+            margin-top: 10px;
+            color: #38bdf8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Live Financial Dashboard</h1>
+
+    <div class="grid">
+
+        <div class="card">
+            <h3>Gold</h3>
+            <div id="gold" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>Silver</h3>
+            <div id="silver" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>Platinum</h3>
+            <div id="platinum" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>S&P 500</h3>
+            <div id="sp500" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>NASDAQ</h3>
+            <div id="nasdaq" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>Apple</h3>
+            <div id="apple" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>Tesla</h3>
+            <div id="tesla" class="price">Loading</div>
+        </div>
+
+        <div class="card">
+            <h3>Bitcoin</h3>
+            <div id="btc" class="price">Loading</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Replace with your AllTick / iTick API key
+        const apiKey = "e7e4ed91556c4410b8947617bbd212d9b50efc3dd4ec4c74b72e5d65dd29d460";
+
+        async function getMarketData() {
+            const url = `https://quote.alltick.io/quote-b-api?token=${apiKey}&symbol=XAUUSD,XAGUSD,XPTUSD,SPX,NDX,AAPL,TSLA,BTCUSD`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Show full API response in console (for debugging)
+                console.log("API response:", data);
+
+                const q = data.data;
+
+                document.getElementById("gold").innerText = "$" + q[0].last.toFixed(2);
+                document.getElementById("silver").innerText = "$" + q[1].last.toFixed(2);
+                document.getElementById("platinum").innerText = "$" + q[2].last.toFixed(2);
+
+                document.getElementById("sp500").innerText = q[3].last.toFixed(2);
+                document.getElementById("nasdaq").innerText = q[4].last.toFixed(2);
+
+                document.getElementById("apple").innerText = "$" + q[5].last.toFixed(2);
+                document.getElementById("tesla").innerText = "$" + q[6].last.toFixed(2);
+                document.getElementById("btc").innerText = "$" + q[7].last.toFixed(2);
+
+            } catch (error) {
+                console.log("API error:", error);
+            }
+        }
+
+        getMarketData();
+        setInterval(getMarketData, 30000); // refresh every 30 seconds
+    </script>
+
+</body>
+
+</html>
