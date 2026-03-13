@@ -92,8 +92,12 @@
         const apiKey = "e7e4ed91556c4410b8947617bbd212d9b50efc3dd4ec4c74b72e5d65dd29d460";
 
         async function getMarketData() {
-            const url = `https://api-free.itick.org/indices/quote-b-api?token=${apiKey}&symbol=XAUUSD,XAGUSD,XPTUSD,SPX,NDX,AAPL,TSLA,BTCUSD`;
-
+            const urls = {
+        metals: `https://api-free.itick.org/crypto?symbol=XAUUSD,XAGUSD,XPTUSD&apikey=${apiKey}`,
+        indices: `https://api-free.itick.org/indices?symbol=SPX,NDX&apikey=${apiKey}`,
+        stocks: `https://api-free.itick.org/stock?symbol=AAPL,TSLA&apikey=${apiKey}`,
+        crypto: `https://api-free.itick.org/crypto?symbol=BTCUSD&apikey=${apiKey}`
+    };
             try {
                 const response = await fetch(url);
                 const data = await response.json();
@@ -127,5 +131,6 @@
 
 
 </html>
+
 
 
