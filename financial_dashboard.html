@@ -88,28 +88,45 @@
     </div>
 
     <script>
-        // Replace with your AllTick / iTick API key
-        const apiKey = e7e4ed91556c4410b8947617bbd212d9b50efc3dd4ec4c74b72e5d65dd29d460;
+        // Replace with your All<script>
+const apiKey = "e7e4ed91556c4410b8947617bbd212d9b50efc3dd4ec4c74b72e5d65dd29d460";
 
-        async function getMarketData() {
-            const urls = {
-        metals: `https://api-free.itick.org/crypto?symbol=XAUUSD,XAGUSD,XPTUSD&apikey=${apiKey}`,
-        indices: `https://api-free.itick.org/indices?symbol=SPX,NDX&apikey=${apiKey}`,
-        stocks: `https://api-free.itick.org/stock?symbol=AAPL,TSLA&apikey=${apiKey}`,
-        crypto: `https://api-free.itick.org/crypto?symbol=BTCUSD&apikey=${apiKey}`
-    };
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
+async function getMarketData() {
+    const url = `https://quote.alltick.io/quote-b-api?token=${apiKey}&symbol=XAUUSD,XAGUSD,XPTUSD,SPX,NDX,AAPL,TSLA,BTCUSD`;
 
-                // Show full API response in console (for debugging)
-                console.log("API response:", data);
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
 
-                const q = data.data;
+        console.log("API response:", data);
 
-                document.getElementById("gold").innerText = "$" + q[0].last.toFixed(2);
-                document.getElementById("silver").innerText = "$" + q[1].last.toFixed(2);
-                document.getElementById("platinum").innerText = "$" + q[2].last.toFixed(2);
+        const items = data.data;
+
+        // Create a lookup table: { "XAUUSD": {last: ...}, ... }
+        const map = {};
+        items.forEach(item => {
+            map[item.symbol
+
+        // Create a lookup table: { "XAUUSD": {last: ...}, ... }
+        const map = {};
+        items.forEach(item => {
+            map[item.symbol] = item;
+        });
+
+        const q = [
+            map["XAUUSD"],
+            map["XAGUSD"],
+            map["XPTUSD"],
+            map["SPX"],
+            map["NDX"],
+            map["AAPL"],
+            map["TSLA"],
+            map["BTCUSD"]
+        ];
+
+        document.getElementById("gold").innerText = "$" + q[0].last.toFixed(2);
+        document.getElementById("silver").innerText = "$" + q[1].last.toFixed(2);
+        document.getElementById("platinum").innerText = "$" + q[2].last.toFixed(2);
 
                 document.getElementById("sp500").innerText = q[3].last.toFixed(2);
                 document.getElementById("nasdaq").innerText = q[4].last.toFixed(2);
@@ -129,9 +146,4 @@
 
 </body>
 
-
 </html>
-
-
-
-
