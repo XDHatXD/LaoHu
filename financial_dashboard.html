@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Alpha Vantage Rate-Limited Dashboard</title>
+<title>Optimized Finnhub Dashboard</title>
 <style>
 body { font-family: Arial, sans-serif; background: #0f172a; color: white; text-align: center; }
 h1 { margin-top: 20px; }
@@ -16,40 +16,36 @@ h1 { margin-top: 20px; }
 </head>
 <body>
 
-<h1>Alpha Vantage Rate-Limited Dashboard</h1>
+<h1>Optimized Finnhub Dashboard</h1>
 <div class="grid" id="dashboard"></div>
 
 <script>
-const apiKey = "0YR1TG36FAX42RAH";
+const apiKey = "d6qenupr01qhcrmjttdgd6qenupr01qhcrmjtte0";
 
-// All assets
+// Assets
 const assets = [
-  // Metals
-  {type:"FOREX", symbol:"XAUUSD", name:"Gold"},
-  {type:"FOREX", symbol:"XAGUSD", name:"Silver"},
-  {type:"FOREX", symbol:"XPTUSD", name:"Platinum"},
-  // Cryptos
-  {type:"CRYPTO", symbol:"BTCUSD", name:"Bitcoin"},
-  {type:"CRYPTO", symbol:"ETHUSD", name:"Ethereum"},
-  {type:"CRYPTO", symbol:"LTCUSD", name:"Litecoin"},
-  // Indices
-  {type:"STOCK", symbol:"DJI", name:"DOW"},
-  {type:"STOCK", symbol:"^IXIC", name:"NASDAQ"},
-  {type:"STOCK", symbol:"^GSPC", name:"S&P 500"},
-  // Stocks
-  {type:"STOCK", symbol:"VXUS", name:"VXUS"},
-  {type:"STOCK", symbol:"IAU", name:"IAU"},
-  {type:"STOCK", symbol:"IAUM", name:"IAUM"},
-  {type:"STOCK", symbol:"SLV", name:"SLV"},
-  {type:"STOCK", symbol:"TSLA", name:"TSLA"},
-  {type:"STOCK", symbol:"FSLR", name:"FSLR"},
-  {type:"STOCK", symbol:"CVX", name:"CVX"},
-  {type:"STOCK", symbol:"GD", name:"GD"},
-  {type:"STOCK", symbol:"GILD", name:"GILD"},
-  {type:"STOCK", symbol:"AIQ", name:"AIQ"},
-  {type:"STOCK", symbol:"SMH", name:"SMH"},
-  {type:"STOCK", symbol:"FSPTX", name:"FSPTX"},
-  {type:"STOCK", symbol:"ARKW", name:"ARKW"}
+  {type:"METAL", symbol:"XAUUSD", name:"Gold"},
+  {type:"METAL", symbol:"XAGUSD", name:"Silver"},
+  {type:"METAL", symbol:"XPTUSD", name:"Platinum"},
+  {type:"CRYPTO", symbol:"BINANCE:BTCUSDT", name:"Bitcoin"},
+  {type:"CRYPTO", symbol:"BINANCE:ETHUSDT", name:"Ethereum"},
+  {type:"CRYPTO", symbol:"BINANCE:LTCUSDT", name:"Litecoin"},
+  {type:"INDEX", symbol:"INDEX:DJI", name:"DOW"},
+  {type:"INDEX", symbol:"INDEX:IXIC", name:"NASDAQ"},
+  {type:"INDEX", symbol:"INDEX:SPX", name:"S&P 500"},
+  {type:"STOCK", symbol:"NYSE:VXUS", name:"VXUS"},
+  {type:"STOCK", symbol:"NYSE:IAU", name:"IAU"},
+  {type:"STOCK", symbol:"NASDAQ:IAUM", name:"IAUM"},
+  {type:"STOCK", symbol:"NYSE:SLV", name:"SLV"},
+  {type:"STOCK", symbol:"NASDAQ:TSLA", name:"TSLA"},
+  {type:"NASDAQ:FSLR", name:"FSLR"},
+  {type:"NYSE:CVX", name:"CVX"},
+  {type:"NYSE:GD", name:"GD"},
+  {type:"NASDAQ:GILD", name:"GILD"},
+  {type:"NYSE:AIQ", name:"AIQ"},
+  {type:"NYSE:SMH", name:"SMH"},
+  {type:"FSPTX", name:"FSPTX"},
+  {type:"ARKW", name:"ARKW"}
 ];
 
 // Create dashboard cards
@@ -63,67 +59,37 @@ assets.forEach(asset=>{
   dashboard.appendChild(card);
 });
 
-// Split assets into batches of 5
-function chunkArray(array, size){
-  const result = [];
-  for(let i=0; i<array.length; i+=size){
-    result.push(array.slice(i,i+size));
-  }
-  return result;
-}
-
-const batches = chunkArray(assets, 5); // 5 requests per minute
-let currentBatch = 0;
-
 // Fetch single asset
 async function fetchAsset(asset){
   try{
-    let url="";
-    if(asset.type==="STOCK"){
-      url=`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${asset.symbol}&apikey=${apiKey}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      const quote = data["Global Quote"];
-      if(quote){
-        const price=parseFloat(quote["05. price"]).toFixed(2);
-        const changePercent=parseFloat(quote["10. change percent"]).toFixed(2);
-        document.getElementById(asset.symbol).innerText="$"+price;
-        document.getElementById(asset.symbol+"-change").innerHTML=`<span class="${changePercent>=0?'up':'down'}">${changePercent}%</span>`;
-      }
-    } else if(asset.type==="CRYPTO" || asset.type==="FOREX"){
-      let from=asset.symbol.slice(0,3);
-      let to=asset.symbol.slice(3,6);
-      url=`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${apiKey}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      const rateObj = data["Realtime Currency Exchange Rate"];
-      if(rateObj){
-        const price=parseFloat(rateObj["5. Exchange Rate"]).toFixed(2);
-        document.getElementById(asset.symbol).innerText="$"+price;
-        document.getElementById(asset.symbol+"-change").innerText="--";
-      }
+    let url = `https://finnhub.io/api/v1/quote?symbol=${asset.symbol}&token=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if(data && data.c){
+      const price = parseFloat(data.c).toFixed(2);
+      const change = parseFloat(((data.c - data.pc)/data.pc)*100).toFixed(2);
+      document.getElementById(asset.symbol).innerText="$"+price;
+      document.getElementById(asset.symbol+"-change").innerHTML=`<span class="${change>=0?'up':'down'}">${change}%</span>`;
     }
   } catch(e){
-    console.error(`Error fetching ${asset.name}:`,e);
+    console.error(`Error fetching ${asset.name}:`, e);
     document.getElementById(asset.symbol).innerText="Error";
     document.getElementById(asset.symbol+"-change").innerText="--";
   }
 }
 
-// Fetch one batch per minute
-async function fetchBatch(batch){
-  batch.forEach(fetchAsset);
+// Sequential fetch to prevent browser throttling
+async function fetchAllSequentially(){
+  for(let i=0; i<assets.length; i++){
+    await fetchAsset(assets[i]);
+    await new Promise(r => setTimeout(r, 200)); // 200ms delay between requests
+  }
 }
 
-// Rotate batches
-function rotateBatches(){
-  fetchBatch(batches[currentBatch]);
-  currentBatch = (currentBatch + 1) % batches.length;
-}
-
-// Initial fetch
-rotateBatches();
-setInterval(rotateBatches, 60000); // 1 batch per minute
+// Initial fetch + refresh every 30 seconds
+fetchAllSequentially();
+setInterval(fetchAllSequentially, 30000);
 </script>
+
 </body>
 </html>
