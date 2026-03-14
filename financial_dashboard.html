@@ -2,131 +2,235 @@
 <html>
 
 <head>
-    <title>Financial Dashboard</title>
+<title>Live Financial Dashboard</title>
 
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            text-align: center;
-        }
+<style>
 
-        h1 {
-            margin-top: 30px;
-        }
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+}
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            max-width: 900px;
-            margin: 40px auto;
-        }
+h1{
+margin-top:30px;
+}
 
-        .card {
-            background: #1e293b;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-        }
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:20px;
+max-width:900px;
+margin:40px auto;
+}
 
-        .price {
-            font-size: 26px;
-            margin-top: 10px;
-            color: #38bdf8;
-        }
-    </style>
+.card{
+background:#1e293b;
+padding:25px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.4);
+}
+
+.price{
+font-size:28px;
+margin-top:10px;
+color:#38bdf8;
+}
+
+</style>
+
 </head>
 
 <body>
 
-    <h1>Live Financial Dashboard</h1>
+<h1>Live Financial Dashboard</h1>
 
-    <div class="grid">
+<div class="grid">
 
-        <div class="card">
-            <h3>Gold</h3>
-            <div id="gold" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>Gold</h3>
+<div id="gold" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>Silver</h3>
-            <div id="silver" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>Silver</h3>
+<div id="silver" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>Platinum</h3>
-            <div id="platinum" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>Platinum</h3>
+<div id="platinum" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>S&P 500</h3>
-            <div id="sp500" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>S&P 500</h3>
+<div id="sp500" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>NASDAQ</h3>
-            <div id="nasdaq" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>NASDAQ</h3>
+<div id="nasdaq" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>Apple</h3>
-            <div id="apple" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>Apple</h3>
+<div id="apple" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>Tesla</h3>
-            <div id="tesla" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>Tesla</h3>
+<div id="tesla" class="price">Connecting...</div>
+</div>
 
-        <div class="card">
-            <h3>Bitcoin</h3>
-            <div id="btc" class="price">Loading</div>
-        </div>
+<div class="card">
+<h3>Bitcoin</h3>
+<div id="btc" class="price">Connecting...</div>
+</div>
 
-    </div>
+</div>
+
 <script>
-const socket = new WebSocket(
-  "wss://ws.alltick.io/quote-b-ws?token=e7e4ed91556c4410b8947617bbd212d9b50efc3dd4ec4c74b72e5d65dd29d460"
+
+const token="e7e4ed91556c4410b8947617bbd212d9b50efc3dd4ec4c74b72e5d65dd29d460";
+
+/* ---------------- CRYPTO ---------------- */
+
+const cryptoSocket = new WebSocket(
+`wss://api-free.itick.org/crypto?token=${token}`
 );
 
-const map = {
-  XAUUSD: "gold",
-  XAGUSD: "silver",
-  XPTUSD: "platinum",
-  SPX: "sp500",
-  NDX: "nasdaq",
-  AAPL: "apple",
-  TSLA: "tesla",
-  BTCUSD: "btc"
+cryptoSocket.onopen = function(){
+
+cryptoSocket.send(JSON.stringify({
+type:"subscribe",
+symbol:"BTCUSDT"
+}));
+
 };
 
-socket.onopen = () => {
-  console.log("WebSocket connected");
-  socket.send(JSON.stringify({
-    cmd: "subscribe",
-    args: Object.keys(map)
-  }));
+cryptoSocket.onmessage = function(event){
+
+const msg = JSON.parse(event.data);
+
+if(msg.data){
+
+document.getElementById("btc").innerText =
+"$"+msg.data[0].last;
+
+}
+
 };
 
-socket.onmessage = (event) => {
-  const msg = JSON.parse(event.data);
-  if (!msg.data) return;
+/* ---------------- FOREX (METALS) ---------------- */
 
-  msg.data.forEach(item => {
-    const el = document.getElementById(map[item.symbol]);
-    if (el && item.last) {
-      el.innerText = "$" + item.last.toFixed(2);
-    }
-  });
+const forexSocket = new WebSocket(
+`wss://api-free.itick.org/forex?token=${token}`
+);
+
+forexSocket.onopen = function(){
+
+forexSocket.send(JSON.stringify({
+type:"subscribe",
+symbol:"XAUUSD,XAGUSD,XPTUSD"
+}));
+
 };
 
-socket.onerror = err => console.error("WebSocket error:", err);
-socket.onclose = ().log("WebSocket closed");
+forexSocket.onmessage = function(event){
+
+const msg = JSON.parse(event.data);
+
+if(msg.data){
+
+msg.data.forEach(item=>{
+
+if(item.symbol==="XAUUSD")
+document.getElementById("gold").innerText="$"+item.last;
+
+if(item.symbol==="XAGUSD")
+document.getElementById("silver").innerText="$"+item.last;
+
+if(item.symbol==="XPTUSD")
+document.getElementById("platinum").innerText="$"+item.last;
+
+});
+
+}
+
+};
+
+/* ---------------- INDICES ---------------- */
+
+const indexSocket = new WebSocket(
+`wss://api-free.itick.org/indices?token=${token}`
+);
+
+indexSocket.onopen = function(){
+
+indexSocket.send(JSON.stringify({
+type:"subscribe",
+symbol:"SPX,NDX"
+}));
+
+};
+
+indexSocket.onmessage = function(event){
+
+const msg = JSON.parse(event.data);
+
+if(msg.data){
+
+msg.data.forEach(item=>{
+
+if(item.symbol==="SPX")
+document.getElementById("sp500").innerText=item.last;
+
+if(item.symbol==="NDX")
+document.getElementById("nasdaq").innerText=item.last;
+
+});
+
+}
+
+};
+
+/* ---------------- STOCKS ---------------- */
+
+const stockSocket = new WebSocket(
+`wss://api-free.itick.org/stock?token=${token}`
+);
+
+stockSocket.onopen = function(){
+
+stockSocket.send(JSON.stringify({
+type:"subscribe",
+symbol:"AAPL,TSLA"
+}));
+
+};
+
+stockSocket.onmessage = function(event){
+
+const msg = JSON.parse(event.data);
+
+if(msg.data){
+
+msg.data.forEach(item=>{
+
+if(item.symbol==="AAPL")
+document.getElementById("apple").innerText="$"+item.last;
+
+if(item.symbol==="TSLA")
+document.getElementById("tesla").innerText="$"+item.last;
+
+});
+
+}
+
+};
+
 </script>
 
-    
 </body>
-
 </html>
