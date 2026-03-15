@@ -2,8 +2,9 @@
 <html>
 
 <head>
+
 <meta charset="UTF-8">
-<title>XDH Dashboard</title>
+<title>XDH Market Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -11,20 +12,23 @@
 
 body{
 font-family:Arial;
-background:#0b1220;
+background:#0a0f1a;
 color:white;
 margin:0;
 }
 
 header{
 background:#111827;
-padding:15px;
+padding:14px;
 display:flex;
 justify-content:space-between;
+align-items:center;
 }
 
+h2{margin:0}
+
 .section{
-max-width:1400px;
+max-width:1500px;
 margin:auto;
 padding:20px;
 }
@@ -32,12 +36,12 @@ padding:20px;
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:15px;
+gap:14px;
 }
 
 .card{
 background:#1e293b;
-padding:15px;
+padding:12px;
 border-radius:8px;
 }
 
@@ -49,11 +53,23 @@ font-size:22px;
 font-size:14px;
 }
 
-.up{color:#22c55e;}
-.down{color:#ef4444;}
+.up{color:#22c55e}
+.down{color:#ef4444}
 
 canvas{
-height:70px !important;
+height:70px!important
+}
+
+#ticker{
+background:black;
+padding:8px;
+white-space:nowrap;
+overflow:hidden;
+}
+
+#ticker span{
+margin-right:35px;
+font-weight:bold;
 }
 
 </style>
@@ -62,23 +78,31 @@ height:70px !important;
 <body>
 
 <header>
-<h2>Lao Hu Market Dashboard</h2>
-<div id="status">Loading...</div>
+<h2>Lao Hu Market Watch</h2>
+<div id="status"></div>
 </header>
+
+<div id="ticker"></div>
 
 <div class="section">
 
-<h3>Market Indices (ETF Proxies)</h3>
+<h3>Market Indices (ETF proxies)</h3>
 <div class="grid" id="indices"></div>
 
 <h3>Stocks</h3>
 <div class="grid" id="stocks"></div>
 
-<h3>ETFs</h3>
+<h3>Technology / AI ETFs</h3>
 <div class="grid" id="etfs"></div>
 
 <h3>Metals ETFs</h3>
 <div class="grid" id="metals"></div>
+
+<h3>Energy</h3>
+<div class="grid" id="energy"></div>
+
+<h3>Bond Yields (ETF proxies)</h3>
+<div class="grid" id="bonds"></div>
 
 <h3>Crypto (Realtime)</h3>
 <div class="grid" id="crypto"></div>
@@ -89,16 +113,16 @@ height:70px !important;
 
 /* FINNHUB KEY */
 
-const finnhub="d6qqkmpr01qgdhqc0ol0d6qqkmpr01qgdhqc0olg";
+const api="d6qqkmpr01qgdhqc0ol0d6qqkmpr01qgdhqc0olg";
 
-/* ETF PROXIES */
+/* INDEX PROXIES */
 
 const indices=[
 {symbol:"SPY",name:"S&P 500"},
-{symbol:"DIA",name:"Dow Jones"},
+{symbol:"DIA",name:"Dow"},
 {symbol:"QQQ",name:"NASDAQ"},
-{symbol:"VIXY",name:"Short VIX"},
-{symbol:"VIXM",name:"Mid VIX"}
+{symbol:"VIXY",name:"VIX Short"},
+{symbol:"VIXM",name:"VIX Mid"}
 ];
 
 /* STOCKS */
@@ -107,18 +131,33 @@ const stocks=[
 "TSLA","FSLR","CVX","GD","GILD"
 ];
 
-/* ETFs */
+/* TECH ETFs */
 
 const etfs=[
-"VXUS","AIQ","SMH","ARKW"
+"AIQ","SMH","ARKW","VXUS"
 ];
 
-/* METAL ETFs */
+/* METALS */
 
 const metals=[
 {symbol:"IAU",name:"Gold"},
 {symbol:"IAUM",name:"Gold Mini"},
 {symbol:"SLV",name:"Silver"}
+];
+
+/* ENERGY */
+
+const energy=[
+{symbol:"XLE",name:"Energy Sector"},
+{symbol:"USO",name:"Oil ETF"},
+{symbol:"UNG",name:"Natural Gas"}
+];
+
+/* BONDS */
+
+const bonds=[
+{symbol:"TLT",name:"20Y Treasury"},
+{symbol:"SHY",name:"1-3Y Treasury"}
 ];
 
 /* CRYPTO */
@@ -129,7 +168,8 @@ const crypto=[
 "BINANCE:LTCUSDT"
 ];
 
-/* CREATE CARDS */
+
+/* CARD CREATOR */
 
 function createCards(list,id){
 
@@ -137,8 +177,8 @@ const grid=document.getElementById(id);
 
 list.forEach(asset=>{
 
-const symbol=asset.symbol || asset;
-const name=asset.name || asset;
+const symbol=asset.symbol||asset;
+const name=asset.name||asset;
 
 const card=document.createElement("div");
 
@@ -161,6 +201,8 @@ createCards(indices,"indices");
 createCards(stocks,"stocks");
 createCards(etfs,"etfs");
 createCards(metals,"metals");
+createCards(energy,"energy");
+createCards(bonds,"bonds");
 createCards(crypto,"crypto");
 
 
@@ -181,8 +223,8 @@ labels:[],
 datasets:[{
 data:[],
 borderColor:"#4ade80",
-pointRadius:0,
-borderWidth:2
+borderWidth:2,
+pointRadius:0
 }]
 },
 options:{
@@ -210,7 +252,30 @@ chart.update();
 }
 
 
-/* FINNHUB QUOTES */
+/* TICKER */
+
+function updateTicker(symbol,price,change){
+
+const ticker=document.getElementById("ticker");
+
+const span=document.createElement("span");
+
+span.innerText=`${symbol} ${price} ${change}%`;
+
+span.className=change>=0?"up":"down";
+
+ticker.appendChild(span);
+
+if(ticker.children.length>50){
+
+ticker.removeChild(ticker.firstChild);
+
+}
+
+}
+
+
+/* LOAD QUOTES */
 
 async function loadQuotes(){
 
@@ -218,14 +283,16 @@ const list=[
 ...indices.map(i=>i.symbol),
 ...stocks,
 ...etfs,
-...metals.map(m=>m.symbol)
+...metals.map(m=>m.symbol),
+...energy.map(e=>e.symbol),
+...bonds.map(b=>b.symbol)
 ];
 
 for(const symbol of list){
 
 try{
 
-const url=`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${finnhub}`;
+const url=`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${api}`;
 
 const res=await fetch(url);
 
@@ -247,6 +314,8 @@ changeEl.className=change>=0?"change up":"change down";
 
 updateChart(symbol,price);
 
+updateTicker(symbol,price,change);
+
 }
 catch{}
 
@@ -261,9 +330,9 @@ loadQuotes();
 setInterval(loadQuotes,60000);
 
 
-/* CRYPTO REALTIME */
+/* REALTIME CRYPTO */
 
-const socket=new WebSocket(`wss://ws.finnhub.io?token=${finnhub}`);
+const socket=new WebSocket(`wss://ws.finnhub.io?token=${api}`);
 
 socket.addEventListener("open",()=>{
 
