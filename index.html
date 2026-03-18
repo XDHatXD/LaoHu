@@ -8,7 +8,8 @@
             background: #0f172a;
             color: white;
             text-align: center;
-            padding-top: 100px;
+            padding-top: 80px;
+            margin: 0;
         }
 
         a {
@@ -18,7 +19,7 @@
             background: #38bdf8;
             color: #0f172a;
             text-decoration: none;
-            font-size: 24px;
+            font-size: 20px;
             border-radius: 10px;
             transition: 0.3s;
         }
@@ -26,35 +27,66 @@
         a:hover {
             background: #0ea5e9;
         }
+
+        /* IMAGE SIZE FIX (SMALLER) */
+        .article-image img {
+            width: 100%;
+            max-width: 650px;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+        }
+
+        /* GRID LAYOUT */
+        .article-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            padding: 40px 20px;
+        }
+
+        .article-content {
+            max-width: 400px;
+            text-align: left;
+        }
+
+        .article-content h2 {
+            margin-bottom: 10px;
+        }
+
+        .article-meta {
+            font-style: italic;
+            color: #94a3b8;
+        }
     </style>
 </head>
+
 <body>
 
     <h1>Life Is Always Better Tomorrow</h1>
-     <h2>KEPP GOING.........</h2>
-
+    <h2>KEEP GOING.........</h2>
 
     <a href="commodity.html" target="_blank">Market News</a>
- <a href="XDH_dashboard_2.html" target="_blank">Market Data</a>
+    <a href="XDH_dashboard_2.html" target="_blank">Market Data</a>
+
+    <div class="article-grid">
+        <!-- Left photo -->
+        <div class="article-image">
+            <img src="photo1.jpg" alt="A Pig Picture">
+        </div>
+
+        <!-- Right content -->
+        <div class="article-content">
+            <h2>HOW LONG IS LONG?</h2>
+            <p class="article-meta">
+                "In the long run, we are all dead" - John Keynes
+            </p>
+            <p>
+                The stock market is a device for transferring money from the impatient to the patient — Warren Buffett
+            </p>
+        </div>
+    </div>
+
 </body>
-    .article-image img{
-  width:100%;
-  max-width:900px;
-  border-radius:16px;
-  box-shadow:0 20px 40px rgba(0,0,0,0.35);
-}
-<div class="article-grid">
-      <!-- Left photo -->
-      <div class="article-image">
-        <img src="photo1.jpg" alt="Pig Picturre">
-      </div>
-      <!-- Right content -->
-      <div class="article-content">
-        <h2>HOW LONG IS LONG？</h2>
-        <p class="article-meta">"In the long run, we are all dead" - John Keynes</p>
-        <p>
-        The stock market is a device for transfering money from the impatient to the patient
-            -- Warrent Buffett
-        </p>
-      </div>
 </html>
