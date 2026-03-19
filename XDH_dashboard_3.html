@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>XDH Dashboard PRO</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{
+    font-family:Arial;
+    background:#0a0f1a;
+    color:white;
+    margin:0;
+}
+header{
+    background:#111827;
+    padding:18px;
+    display:flex;
+    justify-content:space-between;
+}
+.section{
+    max-width:1600px;
+    margin:auto;
+    padding:20px;
+}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+}
+.card{
+    background:#1e293b;
+    padding:12px;
+    border-radius:8px;
+}
+.price{
+    font-size:18px;
+    font-weight: bolder;
+}
+.change{
+    font-size:24px;
+    font-weight: bold;
+}
+.up{color:#22c55e;}
+.down{color:#ef4444;}
+canvas{height:70px!important;}
+.heat{
+    font-size:18px;
+    text-align:center;
+    padding:20px;
+    border-radius:6px;
+}
+button{
+    background:#111827;
+    color:white;
+    border:1px solid #374151;
+    padding:3px 6px;
+    margin:2px;
+    cursor:pointer;
+    font-size:11px;
+}
+button:hover{
+    background:#1f2937;
+}
+</style>
+</head>
+
+<body>
+<header>
+<h2>XD Hu Market Watch and Warning System</h2>
+<div id="status"></div>
+</header>
+<a href="commodity.html" target="_blank">click HERE for Market News</a>
+
+<div class="section">
+<h3>US Market Indices (ETF proxies)</h3>
+<div class="grid" id="indices"></div>
+
+<h3>World Markets</h3>
+<div class="grid" id="world"></div>
+
+<h3>Stocks</h3>
+<div class="grid" id="stocks"></div>
+
+<h3>Sector Heatmap</h3>
+<div class="grid" id="heatmap"></div>
+
+<h3>Bond Yield Curve (ETF proxies)</h3>
+<div class="grid" id="bonds"></div>
+
+<h3>Metal ETFs</h3>
+<div class="grid" id="metals"></div>
+
+<h3>Derived Metal Prices</h3>
+<div class="grid" id="ratios"></div>
+
+<h3>Crypto (Realtime)</h3>
+<div class="grid" id="crypto"></div>
+</div>
+
+<script>
+const api="d6qqkmpr01qgdhqc0ol0d6qqkmpr01qgdhqc0olg";
+
+/* Asset definitions */
+const indices=[{symbol:"SPY",name:"S&P 500"},{symbol:"DIA",name:"Dow"},{symbol:"QQQ",name:"NASDAQ"},{symbol:"VIXY",name:"VIX Short"},{symbol:"VIXM",name:"VIX Mid"}];
+const world=[{symbol:"EWJ",name:"Japan"},{symbol:"EWG",name:"Germany"},{symbol:"EWU",name:"UK"},{symbol:"FXI",name:"China"}];
+const stocks=["TSLA","FSLR","CVX","GD","GILD","VXUS","IAU","AIQ","SMH","ARKW","DNL","DSTL","RWL"];
+const sectors=[{symbol:"XLK",name:"Tech"},{symbol:"XLF",name:"Finance"},{symbol:"XLE",name:"Energy"},{symbol:"XLV",name:"Health"},{symbol:"XLY",name:"Consumer"},{symbol:"XLI",name:"Industrial"}];
+const bonds=[{symbol:"SHY",name:"2Y"},{symbol:"IEF",name:"7-10Y"},{symbol:"TLT",name:"20Y"}];
+const metals=[{symbol:"IAU",name:"Gold ETF"},{symbol:"SLV",name:"Silver ETF"},{symbol:"USO",name:"Oil NAV (next month contract)"},{symbol:"PALL",name:"Palladium ETF"},{symbol:"PPLT",name:"Platinum ETF"}];
+const crypto=["BINANCE:BTCUSDT","BINANCE:ETHUSDT","BINANCE:LTCUSDT"];
+const ratios=[{symbol:"GOLD_SPOT",name:"Gold"},{symbol:"SILVER_SPOT",name:"Silver"},{symbol:"GSR",name:"Gold/Silver"},{symbol:"GOR",name:"Gold/Oil"}];
+
+/* Metal constants */
+const IAU_GOLD_OZ=0.009523*2/(1-0.0025);
+const SLV_SILVER_OZ=0.93/(1-0.005);
+
+/* Cards creation */
+function createCards(list,id){
+    const grid=document.getElementById(id);
+    list.forEach(asset=>{
+        const symbol=asset.symbol||asset;
+        const name=asset.name||asset;
+        const card=document.createElement("div");
+        card.className="card";
+        card.innerHTML=`
+        <h4>${name}</h4>
+        <div>
+            <button onclick="setTimeframe('${symbol}','1D')">1D</button>
+            <button onclick="setTimeframe('${symbol}','1W')">1W</button>
+            <button onclick="setTimeframe('${symbol}','1M')">1M</button>
+        </div>
+        <div id="${symbol}" class="price">--</div>
+        <div id="${symbol}-change" class="change"></div>
+        <canvas id="chart-${symbol}"></canvas>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+createCards(indices,"indices");
+createCards(world,"world");
+createCards(stocks,"stocks");
+createCards(sectors,"heatmap");
+createCards(bonds,"bonds");
+createCards(metals,"metals");
+createCards(ratios,"ratios");
+createCards(crypto,"crypto");
+
+/* Charts and data storage */
+const charts={};
+const historyData={};
+const currentTimeframe={};
+const timeframeSettings={ "1D":{points:300,step:1},"1W":{points:300,step:5},"1M":{points:300,step:30} };
+
+/* Update chart */
+function updateChart(symbol,price){
+    if(!historyData[symbol]){
+        historyData[symbol]=[];
+        currentTimeframe[symbol]="1D";
+    }
+    historyData[symbol].push({time:Date.now(),price:price});
+    if(historyData[symbol].length>2000) historyData[symbol].shift();
+    renderChart(symbol);
+}
+
+/* Render chart according to timeframe */
+function renderChart(symbol){
+    const tf=currentTimeframe[symbol];
+    const settings=timeframeSettings[tf];
+    const raw=historyData[symbol];
+    const sampled=raw.filter((_,i)=>i%settings.step===0);
+    const data=sampled.slice(-settings.points).map(d=>d.price);
+    if(!charts[symbol]){
+        charts[symbol]=new Chart(
+            document.getElementById("chart-"+symbol),
+            {
+                type:"line",
+                data:{labels:[],datasets:[{data:[],borderWidth:2,pointRadius:0}]},
+                options:{
+                    animation:false,
+                    plugins:{legend:{display:false}},
+                    scales:{x:{display:false},y:{display:false}}
+                }
+            }
+        );
+    }
+    const chart=charts[symbol];
+    chart.data.labels=data.map(()=> "");
+    chart.data.datasets[0].data=data;
+    if(data.length>1){
+        const first=data[0];
+        const last=data[data.length-1];
+        chart.data.datasets[0].borderColor=last>=first?"#22c55e":"#ef4444";
+    }
+    chart.update("none");
+}
+
+/* Switch timeframe */
+function setTimeframe(symbol,tf){
+    currentTimeframe[symbol]=tf;
+    renderChart(symbol);
+}
+
+/* Load quotes */
+async function loadQuotes(){
+    const symbols=[...indices.map(i=>i.symbol),...world.map(i=>i.symbol),...stocks,...sectors.map(i=>i.symbol),...bonds.map(i=>i.symbol),...metals.map(i=>i.symbol),"USO"];
+    const requests=symbols.map(symbol=>
+        fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${api}`)
+        .then(r=>r.json())
+        .then(data=>({symbol,data}))
+    );
+    const results=await Promise.all(requests);
+    let iau=null, slv=null, uso=null;
+    results.forEach(({symbol,data})=>{
+        if(!data.c) return;
+        const price=data.c;
+        const change=((data.c-data.pc)/data.pc*100).toFixed(2);
+        const el=document.getElementById(symbol);
+        if(el){
+            el.innerText="$"+price.toFixed(2);
+            el.classList.remove("up","down");
+            el.classList.add(change>=0?"up":"down");
+            const changeEl=document.getElementById(symbol+"-change");
+            if(changeEl){
+                changeEl.innerText=change+"%";
+                changeEl.className=change>=0?"change up":"change down";
+            }
+            updateChart(symbol,price);
+        }
+        if(sectors.some(s=>s.symbol===symbol)){
+            const card=document.getElementById(symbol).parentElement;
+            card.style.background=change>=0?"#063b1e":"#3b0606";
+        }
+        if(symbol==="IAU") iau=price;
+        if(symbol==="SLV") slv=price;
+        if(symbol==="USO") uso=price;
+    });
+    if(iau && slv && uso){
+        const gold=iau/IAU_GOLD_OZ;
+        const silver=slv/SLV_SILVER_OZ;
+        const gsr=gold/silver;
+        const gor=gold/uso;
+        document.getElementById("GOLD_SPOT").innerText="$"+gold.toFixed(2);
+        document.getElementById("SILVER_SPOT").innerText="$"+silver.toFixed(2);
+        document.getElementById("GSR").innerText=gsr.toFixed(2);
+        document.getElementById("GOR").innerText=gor.toFixed(2);
+        updateChart("GOLD_SPOT",gold);
+        updateChart("SILVER_SPOT",silver);
+        updateChart("GSR",gsr);
+        updateChart("GOR",gor);
+    }
+}
+
+loadQuotes();
+setInterval(loadQuotes,60000);
+
+/* Crypto realtime */
+const socket=new WebSocket(`wss://ws.finnhub.io?token=${api}`);
+socket.addEventListener("open",()=>{
+    crypto.forEach(symbol=>{
+        socket.send(JSON.stringify({type:"subscribe",symbol}));
+    });
+});
+socket.addEventListener("message",(event)=>{
+    const msg=JSON.parse(event.data);
+    if(!msg.data) return;
+    msg.data.forEach(trade=>{
+        const el=document.getElementById(trade.s);
+        if(el){
+            el.innerText="$"+trade.p;
+            updateChart(trade.s,trade.p);
+        }
+    });
+});
+
+/* Market status */
+function marketStatus(){
+    const now=new Date();
+    const hour=now.getUTCHours();
+    const open=(hour>=14 && hour<=21);
+    document.getElementById("status").innerText=open?"US Market OPEN":"US Market CLOSED";
+}
+marketStatus();
+</script>
+</body>
+</html>
