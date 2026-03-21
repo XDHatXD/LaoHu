@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>US Economy Health Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 15px;
+        }
+
+        h2 {
+            margin-left: 15px;
+            margin-top: 25px;
+            color: #94a3b8;
+        }
+h2 {
+    border-bottom: 1px solid #334155;
+    padding-bottom: 5px;
+}
+        .section {
+            padding: 10px;
+        }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14 px; /* more space between boxes */
+    padding: 15px;
+}
+
+.card {
+    background: #1e293b;
+    padding: 12px;
+    border-radius: 10px;
+    width: 70%;
+    margin: 0 auto; /* center each box */
+}
+
+        .value {
+            font-size: 28px;
+            margin: 10px 0;
+        }
+
+        canvas {
+            height: 140px !important;
+        }
+
+        .summary {
+            text-align: center;
+            font-size: 26px;
+            margin: 15px;
+        }
+
+        .green { color: #22c55e; }
+        .yellow { color: #eab308; }
+        .red { color: #ef4444; }
+
+    </style>
+</head>
+
+<body>
+
+<h1>US Economy Health Dashboard (FRED Data)</h1>
+
+<div id="summary" class="summary"></div>
+
+<!-- 🏠 Housing & Rates -->
+<div class="section">
+    <h2>🏠 12 Month Mortgage & Interest Rate Trends</h2>
+    <div class="grid" id="rates"></div>
+</div>
+
+<!-- 📊 Inflation & Labor -->
+<div class="section">
+    <h2>📊 12 Month Inflation & Labor Trends</h2>
+    <div class="grid" id="macro"></div>
+</div>
+
+<!-- 🌍 Global -->
+<div class="section">
+    <h2>🌍 12 Month Exchange Rate Changes</h2>
+    <div class="grid" id="fx"></div>
+</div>
+
+<script>
+
+const API_KEY = "586b60806b6165a523f3854547237861"; // ← PUT YOUR KEY HERE
+
+const groups = {
+    rates: [
+        { name: "30 Year Mortgage Rate", id: "MORTGAGE30US", unit: "%" },
+        { name: "15 Year Mortgage Rate", id: "MORTGAGE15US", unit: "%" },
+        { name: "4 Year Treasury Yield", id: "TY48MCD", unit: "%" }
+    ],
+    macro: [
+        { name: "CPI (1982-1984 as 100)", id: "CPIAUCSL", unit: "" },
+        { name: "Unemployment Rate", id: "UNRATE", unit: "%" }
+    ],
+    fx: [
+        { name: "USD / EUR", id: "DEXUSEU", unit: "" },
+        { name: "CNY / USD", id: "DEXCHUS", unit: "" },
+        { name: "CAD / USD", id: "DEXCAUS", unit: "" }
+    ]
+};
+
+async function fetchSeries(seriesId) {
+    const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEY}&file_type=json&sort_order=desc&limit=24`;
+
+    const proxy = `https://corsproxy.io/?${encodeURIComponent(fredUrl)}`;
+
+    const res = await fetch(proxy);
+    const data = await res.json();
+
+    let values = data.observations
+        .map(o => o.value)
+        .filter(v => v !== "." && !isNaN(parseFloat(v)))
+        .map(Number)
+        .reverse();
+
+    return values.slice(-12);
+}
+
+function createChart(canvasId, data) {
+    new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: {
+            labels: data.map((_, i) => i+1),
+            datasets: [{
+                data: data,
+                borderWidth: 2,
+                tension: 0.3
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }},
+            scales: { x: { display: false }}
+        }
+    });
+}
+
+function addCard(containerId, ind, data) {
+    const latest = data[data.length-1];
+    const canvasId = ind.id;
+
+    document.getElementById(containerId).innerHTML += `
+        <div class="card">
+            <div>${ind.name}</div>
+            <div class="value">${latest.toFixed(2)} ${ind.unit}</div>
+            <canvas id="${canvasId}"></canvas>
+        </div>
+    `;
+
+    setTimeout(() => createChart(canvasId, data), 100);
+
+    return latest;
+}
+
+async function loadDashboard() {
+
+    let cpi, unrate, rate;
+
+    for (let group in groups) {
+        for (let ind of groups[group]) {
+
+            const data = await fetchSeries(ind.id);
+            if (!data) continue;
+
+            const latest = addCard(group, ind, data);
+
+            if (ind.id === "CPIAUCSL") cpi = latest;
+            if (ind.id === "UNRATE") unrate = latest;
+            if (ind.id === "MORTGAGE30US") rate = latest;
+        }
+    }
+
+    // Health Score
+    let score = 100;
+    if (cpi > 4) score -= 25;
+    if (unrate > 5) score -= 25;
+    if (rate > 5) score -= 25;
+
+    let color = "green";
+    if (score < 70) color = "yellow";
+    if (score < 50) color = "red";
+
+    let recession = (unrate > 4.5 && rate < 5)
+        ? "🚨 Recession Risk Rising"
+        : "✅ Stable";
+
+    document.getElementById("summary").innerHTML = `
+        <div class="${color}">🧠 Health Score: ${score}/100</div>
+        <div>${recession}</div>
+    `;
+}
+
+loadDashboard();
+setInterval(loadDashboard, 300000);
+
+</script>
+
+</body>
+</html>
