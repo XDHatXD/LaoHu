@@ -4,8 +4,7 @@
     <title>US Economy Health Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Chart.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
@@ -17,15 +16,13 @@
 
         h1 {
             text-align: center;
-            padding: 10px;
+            padding: 15px;
         }
 
         h2 {
             margin-left: 15px;
             margin-top: 25px;
             color: #94a3b8;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 5px;
         }
 
         .section {
@@ -34,109 +31,116 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 14px;
-            padding: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            padding: 10px;
         }
 
         .card {
             background: #1e293b;
-            padding: 14px;
+            padding: 15px;
             border-radius: 12px;
         }
 
         .value {
-            font-size: 26px;
-            margin: 10px 0;
+            font-size: 22px;
+            margin: 6px 0;
         }
 
         canvas {
-            height: 140px !important;
+            height: 160px !important;
         }
 
         .summary {
             text-align: center;
-            font-size: 20px;
+            font-size: 26px;
             margin: 15px;
         }
 
         .green { color: #22c55e; }
         .yellow { color: #eab308; }
         .red { color: #ef4444; }
+
     </style>
 </head>
 
 <body>
 
-<h1>US Economy Health Dashboard (FRED Data)</h1>
+<h1>US Economy Health Dashboard</h1>
 
 <div id="summary" class="summary"></div>
 
+<!-- 🏠 Housing & Rates -->
 <div class="section">
-    <h2>🏠 12 Month Mortgage & Interest Rate Trends</h2>
+    <h2>🏠 Mortgage & Interest Rates</h2>
     <div class="grid" id="rates"></div>
 </div>
 
+<!-- 📊 Inflation & Labor -->
 <div class="section">
-    <h2>📊 12 Month Inflation & Labor Trends</h2>
+    <h2>📊 Inflation & Labor</h2>
     <div class="grid" id="macro"></div>
 </div>
 
+<!-- 🌍 Global -->
 <div class="section">
-    <h2>🌍 12 Month Exchange Rate Changes</h2>
+    <h2>🌍 Global FX Rates</h2>
     <div class="grid" id="fx"></div>
 </div>
 
 <script>
 
-const API_KEY = "586b60806b6165a523f3854547237861"; // ← replace
-
-const chartStore = {}; // store chart instances
+const API_KEY = "586b60806b6165a523f3854547237861";
 
 const groups = {
     rates: [
-        { name: "30 Year Mortgage Rate", id: "MORTGAGE30US", unit: "%" },
-        { name: "15 Year Mortgage Rate", id: "MORTGAGE15US", unit: "%" },
-        { name: "4 Year Treasury Yield", id: "TY48MCD", unit: "%" }
+        { name: "30Y Mortgage", id: "MORTGAGE30US", unit: "%" },
+        { name: "15Y Mortgage", id: "MORTGAGE15US", unit: "%" },
+        { name: "4Y Treasury Yield", id: "TY48MCD", unit: "%" }
     ],
     macro: [
-        { name: "CPI (1982-1984 = 100)", id: "CPIAUCSL", unit: "" },
+        { name: "Consumer Price Index", id: "CPIAUCSL", unit: "" },
         { name: "Unemployment Rate", id: "UNRATE", unit: "%" }
     ],
     fx: [
-        { name: "USD / EUR", id: "DEXUSEU", unit: "" },
-        { name: "CNY / USD", id: "DEXCHUS", unit: "" },
-        { name: "CAD / USD", id: "DEXCAUS", unit: "" }
+        { name: "Euro to USD", id: "DEXUSEU", unit: "" },
+        { name: "USD to Chinese YUAN", id: "DEXCHUS", unit: "" },
+        { name: "USD to Canadian DOLLAR", id: "DEXCAUS", unit: "" },
+        { name: "USD to Swiss FRANC", id: "DEXSZUS", unit: "" },
+        { name: "USD to Singapore DOLLAR", id: "DEXSIUS", unit: "" }
     ]
 };
 
 async function fetchSeries(seriesId) {
-    const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEY}&file_type=json&sort_order=desc&limit=24`;
-    const proxy = `https://corsproxy.io/?${encodeURIComponent(fredUrl)}`;
+    try {
+        const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEY}&file_type=json&sort_order=desc&limit=30`;
+        const proxy = `https://corsproxy.io/?${encodeURIComponent(fredUrl)}`;
 
-    const res = await fetch(proxy);
-    const data = await res.json();
+        const res = await fetch(proxy);
+        const data = await res.json();
 
-    let values = data.observations
-        .map(o => o.value)
-        .filter(v => v !== "." && !isNaN(parseFloat(v)))
-        .map(Number)
-        .reverse();
+        let values = data.observations
+            .map(o => o.value)
+            .filter(v => v !== "." && !isNaN(parseFloat(v)))
+            .map(Number);
 
-    return values.slice(-12);
+        if (values.length === 0) return null;
+
+        values = values.reverse();
+
+        return values.slice(-12);
+
+    } catch (err) {
+        console.error("Error loading", seriesId, err);
+        return null;
+    }
 }
 
 function createChart(canvasId, data) {
-    if (chartStore[canvasId]) {
-        chartStore[canvasId].data.datasets[0].data = data;
-        chartStore[canvasId].update();
-        return;
-    }
-
-    chartStore[canvasId] = new Chart(document.getElementById(canvasId), {
+    new Chart(document.getElementById(canvasId), {
         type: 'line',
         data: {
-            labels: data.map((_, i) => i + 1),
+            labels: data.map((_, i) => i+1),
             datasets: [{
                 data: data,
                 borderWidth: 2,
@@ -150,32 +154,62 @@ function createChart(canvasId, data) {
     });
 }
 
-function addOrUpdateCard(containerId, ind, data) {
-    const latest = data[data.length - 1];
-    const cardId = `card-${ind.id}`;
-    const canvasId = ind.id;
+function addCard(containerId, ind, data) {
 
-    let card = document.getElementById(cardId);
-
-    if (!card) {
+    if (!data || data.length === 0) {
         document.getElementById(containerId).innerHTML += `
-            <div class="card" id="${cardId}">
+            <div class="card">
                 <div>${ind.name}</div>
-                <div class="value" id="value-${ind.id}"></div>
-                <canvas id="${canvasId}"></canvas>
+                <div class="value">N/A</div>
             </div>
         `;
+        return null;
     }
 
-    document.getElementById(`value-${ind.id}`).innerText =
-        `${latest.toFixed(2)} ${ind.unit}`;
+    const latest = data[data.length - 1];
+    const prev = data[data.length - 2] || latest;
 
-    requestAnimationFrame(() => createChart(canvasId, data));
+    const canvasId = ind.id;
+
+    // Trend arrow
+    let arrow = "→";
+    let color = "white";
+
+    if (latest > prev) {
+        arrow = "▲";
+        color = "#22c55e";
+    } else if (latest < prev) {
+        arrow = "▼";
+        color = "#ef4444";
+    }
+
+    // FX uses 4 decimals
+    const decimals = containerId === "fx" ? 4 : 2;
+
+    document.getElementById(containerId).innerHTML += `
+        <div class="card">
+            <div>${ind.name}</div>
+            <div class="value">${latest.toFixed(decimals)} ${ind.unit}</div>
+            <div style="color:${color}">
+                ${arrow} ${(latest - prev).toFixed(decimals)}
+            </div>
+            <canvas id="${canvasId}"></canvas>
+        </div>
+    `;
+
+    if (data.length > 2) {
+        setTimeout(() => createChart(canvasId, data), 100);
+    }
 
     return latest;
 }
 
 async function loadDashboard() {
+
+    // clear old data (important for refresh)
+    document.getElementById("rates").innerHTML = "";
+    document.getElementById("macro").innerHTML = "";
+    document.getElementById("fx").innerHTML = "";
 
     let cpi, unrate, rate;
 
@@ -183,9 +217,10 @@ async function loadDashboard() {
         for (let ind of groups[group]) {
 
             const data = await fetchSeries(ind.id);
-            if (!data) continue;
 
-            const latest = addOrUpdateCard(group, ind, data);
+            const latest = addCard(group, ind, data);
+
+            if (!latest) continue;
 
             if (ind.id === "CPIAUCSL") cpi = latest;
             if (ind.id === "UNRATE") unrate = latest;
@@ -193,6 +228,7 @@ async function loadDashboard() {
         }
     }
 
+    // Health Score
     let score = 100;
     if (cpi > 4) score -= 25;
     if (unrate > 5) score -= 25;
@@ -212,10 +248,7 @@ async function loadDashboard() {
     `;
 }
 
-// Initial load
 loadDashboard();
-
-// Auto refresh every 5 min
 setInterval(loadDashboard, 300000);
 
 </script>
