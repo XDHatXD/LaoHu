@@ -291,7 +291,7 @@ async function loadLiveFX() {
     if (!rates) return;
 
     const pairs = [
-        { name: "EUR/USD", val: 1 / rates.EUR },
+        { name: "EUR/USD", val: rates.EUR },
         { name: "USD/CNY", val: rates.CNY },
         { name: "USD/CAD", val: rates.CAD },
         { name: "USD/CHF", val: rates.CHF },
