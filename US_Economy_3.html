@@ -3,7 +3,7 @@
 <head>
     <title>US Economy Health Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<a href="commodity.html" target="_blank">click HERE for Market News</a>
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
 
@@ -205,7 +205,7 @@ async function loadDashboard() {
     let recession = (unrate > 4.5 && rate < 5)
         ? "🚨 Recession Risk Rising"
         : "✅ Stable";
-<a href="commodity.html" target="_blank">click HERE for Market News</a>
+
     document.getElementById("summary").innerHTML = `
         <div class="${color}">🧠 Health Score: ${score}/100</div>
         <div>${recession}</div>
