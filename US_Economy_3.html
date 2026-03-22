@@ -4,7 +4,8 @@
     <title>US Economy Health Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
 
     <style>
         body {
@@ -16,38 +17,36 @@
 
         h1 {
             text-align: center;
-            padding: 15px;
+            padding: 10px;
         }
 
         h2 {
             margin-left: 15px;
             margin-top: 25px;
             color: #94a3b8;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 5px;
         }
-h2 {
-    border-bottom: 1px solid #334155;
-    padding-bottom: 5px;
-}
+
         .section {
             padding: 10px;
         }
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 14 px; /* more space between boxes */
-    padding: 15px;
-}
 
-.card {
-    background: #1e293b;
-    padding: 12px;
-    border-radius: 10px;
-    width: 70%;
-    margin: 0 auto; /* center each box */
-}
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            padding: 15px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 14px;
+            border-radius: 12px;
+        }
 
         .value {
-            font-size: 28px;
+            font-size: 26px;
             margin: 10px 0;
         }
 
@@ -58,13 +57,12 @@ h2 {
         .summary {
             text-align: center;
             font-size: 20px;
-            margin: 10px;
+            margin: 15px;
         }
 
         .green { color: #22c55e; }
         .yellow { color: #eab308; }
         .red { color: #ef4444; }
-
     </style>
 </head>
 
@@ -74,19 +72,16 @@ h2 {
 
 <div id="summary" class="summary"></div>
 
-<!-- 🏠 Housing & Rates -->
 <div class="section">
     <h2>🏠 12 Month Mortgage & Interest Rate Trends</h2>
     <div class="grid" id="rates"></div>
 </div>
 
-<!-- 📊 Inflation & Labor -->
 <div class="section">
     <h2>📊 12 Month Inflation & Labor Trends</h2>
     <div class="grid" id="macro"></div>
 </div>
 
-<!-- 🌍 Global -->
 <div class="section">
     <h2>🌍 12 Month Exchange Rate Changes</h2>
     <div class="grid" id="fx"></div>
@@ -94,7 +89,9 @@ h2 {
 
 <script>
 
-const API_KEY = "586b60806b6165a523f3854547237861"; // ← PUT YOUR KEY HERE
+const API_KEY = "586b60806b6165a523f3854547237861"; // ← replace
+
+const chartStore = {}; // store chart instances
 
 const groups = {
     rates: [
@@ -103,7 +100,7 @@ const groups = {
         { name: "4 Year Treasury Yield", id: "TY48MCD", unit: "%" }
     ],
     macro: [
-        { name: "CPI (1982-1984 as 100)", id: "CPIAUCSL", unit: "" },
+        { name: "CPI (1982-1984 = 100)", id: "CPIAUCSL", unit: "" },
         { name: "Unemployment Rate", id: "UNRATE", unit: "%" }
     ],
     fx: [
@@ -115,7 +112,6 @@ const groups = {
 
 async function fetchSeries(seriesId) {
     const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEY}&file_type=json&sort_order=desc&limit=24`;
-
     const proxy = `https://corsproxy.io/?${encodeURIComponent(fredUrl)}`;
 
     const res = await fetch(proxy);
@@ -131,10 +127,16 @@ async function fetchSeries(seriesId) {
 }
 
 function createChart(canvasId, data) {
-    new Chart(document.getElementById(canvasId), {
+    if (chartStore[canvasId]) {
+        chartStore[canvasId].data.datasets[0].data = data;
+        chartStore[canvasId].update();
+        return;
+    }
+
+    chartStore[canvasId] = new Chart(document.getElementById(canvasId), {
         type: 'line',
         data: {
-            labels: data.map((_, i) => i+1),
+            labels: data.map((_, i) => i + 1),
             datasets: [{
                 data: data,
                 borderWidth: 2,
@@ -148,19 +150,27 @@ function createChart(canvasId, data) {
     });
 }
 
-function addCard(containerId, ind, data) {
-    const latest = data[data.length-1];
+function addOrUpdateCard(containerId, ind, data) {
+    const latest = data[data.length - 1];
+    const cardId = `card-${ind.id}`;
     const canvasId = ind.id;
 
-    document.getElementById(containerId).innerHTML += `
-        <div class="card">
-            <div>${ind.name}</div>
-            <div class="value">${latest.toFixed(2)} ${ind.unit}</div>
-            <canvas id="${canvasId}"></canvas>
-        </div>
-    `;
+    let card = document.getElementById(cardId);
 
-    setTimeout(() => createChart(canvasId, data), 100);
+    if (!card) {
+        document.getElementById(containerId).innerHTML += `
+            <div class="card" id="${cardId}">
+                <div>${ind.name}</div>
+                <div class="value" id="value-${ind.id}"></div>
+                <canvas id="${canvasId}"></canvas>
+            </div>
+        `;
+    }
+
+    document.getElementById(`value-${ind.id}`).innerText =
+        `${latest.toFixed(2)} ${ind.unit}`;
+
+    requestAnimationFrame(() => createChart(canvasId, data));
 
     return latest;
 }
@@ -175,7 +185,7 @@ async function loadDashboard() {
             const data = await fetchSeries(ind.id);
             if (!data) continue;
 
-            const latest = addCard(group, ind, data);
+            const latest = addOrUpdateCard(group, ind, data);
 
             if (ind.id === "CPIAUCSL") cpi = latest;
             if (ind.id === "UNRATE") unrate = latest;
@@ -183,7 +193,6 @@ async function loadDashboard() {
         }
     }
 
-    // Health Score
     let score = 100;
     if (cpi > 4) score -= 25;
     if (unrate > 5) score -= 25;
@@ -203,7 +212,10 @@ async function loadDashboard() {
     `;
 }
 
+// Initial load
 loadDashboard();
+
+// Auto refresh every 5 min
 setInterval(loadDashboard, 300000);
 
 </script>
