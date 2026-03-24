@@ -60,8 +60,14 @@
         .green { color: #22c55e; }
         .yellow { color: #eab308; }
         .red { color: #ef4444; }
+table th, table td {
+    border: 1px solid #8aaacf;
+}
 
-    </style>
+table {
+    border: 1px solid #6d74d1;
+}
+</style>
 </head>
 
 <body>
@@ -69,90 +75,7 @@
 <h1>US Economy Health Dashboard</h1>
 <a href="index.html" target="_blank">click HERE for Market News and Data</a>
 <div id="summary" class="summary"></div>
- <h1>Currency Stability Overview</h1>
-
-  <!-- 👉 INSERT YOUR TABLE HERE -->
-  <!-- paste the table code right below this line -->
-
  
-    <div style="overflow-x:auto; margin-top:20px;">
-<table style="width:100%; border-collapse:collapse; font-family:Arial; color:white;">
-  <thead>
-    <tr style="background:#1e293b;">
-      <th style="padding:10px; border-bottom:1px solid #334155;">Currency</th>
-      <th style="padding:10px; border-bottom:1px solid #334155;">Overall Stability</th>
-      <th style="padding:10px; border-bottom:1px solid #334155;">Safe Haven Status</th>
-      <th style="padding:10px; border-bottom:1px solid #334155;">Volatility</th>
-      <th style="padding:10px; border-bottom:1px solid #334155;">Key Drivers</th>
-      <th style="padding:10px; border-bottom:1px solid #334155;">Global Reserve Share</th>
-      <th style="padding:10px; border-bottom:1px solid #334155;">Notes</th>
-    </tr>
-  </thead>
-  <tbody>
-
-    <tr style="border-bottom:1px solid #334155;">
-      <td style="padding:10px;">USD</td>
-      <td style="padding:10px;">⭐⭐⭐⭐⭐<br>Very High</td>
-      <td style="padding:10px;">Strong safe haven</td>
-      <td style="padding:10px;">Low</td>
-      <td style="padding:10px;">Global demand, U.S. Treasuries, Fed policy</td>
-      <td style="padding:10px;">#1 in the world</td>
-      <td style="padding:10px;">The world’s anchor currency; ultimate liquidity.</td>
-    </tr>
-
-    <tr style="border-bottom:1px solid #334155;">
-      <td style="padding:10px;">CHF (Swiss Franc)</td>
-      <td style="padding:10px;">⭐⭐⭐⭐⭐<br>Extremely High</td>
-      <td style="padding:10px;">Top-tier safe haven</td>
-      <td style="padding:10px;">Very Low</td>
-      <td style="padding:10px;">Swiss neutrality, strong financial sector</td>
-      <td style="padding:10px;">High</td>
-      <td style="padding:10px;">Surges during global stress; SNB sometimes intervenes.</td>
-    </tr>
-
-    <tr style="border-bottom:1px solid #334155;">
-      <td style="padding:10px;">SGD (Singapore Dollar)</td>
-      <td style="padding:10px;">⭐⭐⭐⭐<br>High</td>
-      <td style="padding:10px;">Moderate</td>
-      <td style="padding:10px;">Low</td>
-      <td style="padding:10px;">MAS managed float, strong economy</td>
-      <td style="padding:10px;">Moderate</td>
-      <td style="padding:10px;">One of the most stable Asian currencies; tightly managed basket.</td>
-    </tr>
-
-    <tr style="border-bottom:1px solid #334155;">
-      <td style="padding:10px;">JPY (Japanese Yen)</td>
-      <td style="padding:10px;">⭐⭐⭐⭐<br>High</td>
-      <td style="padding:10px;">Major safe haven</td>
-      <td style="padding:10px;">Moderate</td>
-      <td style="padding:10px;">Risk-off flows, BOJ policy</td>
-      <td style="padding:10px;">High</td>
-      <td style="padding:10px;">Strengthens sharply during crises due to repatriation flows.</td>
-    </tr>
-
-    <tr style="border-bottom:1px solid #334155;">
-      <td style="padding:10px;">EUR (Euro)</td>
-      <td style="padding:10px;">⭐⭐⭐⭐<br>High</td>
-      <td style="padding:10px;">Moderate</td>
-      <td style="padding:10px;">Low–Moderate</td>
-      <td style="padding:10px;">ECB policy, Eurozone economy</td>
-      <td style="padding:10px;">#2 global reserve</td>
-      <td style="padding:10px;">Very stable but can be affected by EU political fragmentation.</td>
-    </tr>
-
-    <tr>
-      <td style="padding:10px;">CAD (Canadian Dollar)</td>
-      <td style="padding:10px;">⭐⭐⭐<br>Moderate</td>
-      <td style="padding:10px;">Not a safe haven</td>
-      <td style="padding:10px;">Higher</td>
-      <td style="padding:10px;">Oil prices, BoC policy, U.S. trade</td>
-      <td style="padding:10px;">Small</td>
-      <td style="padding:10px;">Stable for a commodity currency but more volatile than USD/CHF/SGD.</td>
-    </tr>
-
-  </tbody>
-</table>
-</div>
 <!-- 🏠 Housing & Rates -->
 <div class="section">
     <h2>🏠 Mortgage & Interest Rates</h2>
@@ -335,77 +258,157 @@ loadDashboard();
 setInterval(loadDashboard, 300000);
 
 </script>
-<div style="max-width:1000px; margin:40px auto; font-family:Arial; color:white;">
+<!-- ================= TABLE SECTION ================= -->
 
-  <h2 style="margin-bottom:10px;">Recommended Allocation for Maximum Stability</h2>
+<!-- Currency Stability Table -->
+<div class="table-box">
+ 
+        <h2>Currency Stability Overview</h2>
 
-  <p style="color:#94a3b8; margin-bottom:20px;">
-    Strategy focused on stability, low volatility, global diversification, and practical access for U.S. residents.
-  </p>
-
-  <!-- Allocation Bar -->
-  <div style="display:flex; height:25px; border-radius:8px; overflow:hidden; margin-bottom:25px;">
-    <div style="width:30%; background:#22c55e;" title="CHF 30%"></div>
-    <div style="width:20%; background:#3b82f6;" title="SGD 20%"></div>
-    <div style="width:20%; background:#f59e0b;" title="USD 20%"></div>
-    <div style="width:20%; background:#a855f7;" title="EUR 20%"></div>
-    <div style="width:10%; background:#ef4444;" title="JPY 10%"></div>
-  </div>
-
-  <!-- Table -->
   <div style="overflow-x:auto;">
-    <table style="width:100%; border-collapse:collapse;">
-
+    <table style="width:100%; border-collapse:collapse; font-family:Arial; color:rgb(242, 240, 247);">
       <thead>
         <tr style="background:#1e293b;">
-          <th style="padding:12px; text-align:left;">Currency</th>
-          <th style="padding:12px; text-align:left;">Allocation</th>
-          <th style="padding:12px; text-align:left;">Why It’s Included</th>
-          <th style="padding:12px; text-align:left;">Access Options</th>
+          <th style="padding:10px;">Currency</th>
+          <th style="padding:10px;">Overall Stability</th>
+          <th style="padding:10px;">Safe Haven Status</th>
+          <th style="padding:10px;">Volatility</th>
+          <th style="padding:10px;">Key Drivers</th>
+          <th style="padding:10px;">Global Reserve Share</th>
+          <th style="padding:10px;">Notes</th>
         </tr>
       </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f2f3f5;">
+          <td style="padding:10px;">USD</td>
+          <td style="padding:10px;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px;">Strong safe haven</td>
+          <td style="padding:10px;">Low</td>
+          <td style="padding:10px;">Global demand, Fed policy</td>
+          <td style="padding:10px;">#1</td>
+          <td style="padding:10px;">World’s anchor currency</td>
+        </tr>
 
+        <tr style="border-bottom:1px solid #f4f6f8;">
+          <td style="padding:10px;">CHF</td>
+          <td style="padding:10px;">⭐⭐⭐⭐⭐</td>
+          <td style="padding:10px;">Top-tier safe haven</td>
+          <td style="padding:10px;">Very Low</td>
+          <td style="padding:10px;">Swiss stability</td>
+          <td style="padding:10px;">High</td>
+          <td style="padding:10px;">Crisis currency</td>
+        </tr>
+
+        <tr style="border-bottom:1px solid #ecf1f8;">
+          <td style="padding:10px;">SGD</td>
+          <td style="padding:10px;">⭐⭐⭐⭐</td>
+          <td style="padding:10px;">Moderate</td>
+          <td style="padding:10px;">Low</td>
+          <td style="padding:10px;">Managed float</td>
+          <td style="padding:10px;">Moderate</td>
+          <td style="padding:10px;">Very stable in Asia</td>
+        </tr>
+
+        <tr style="border-bottom:1px solid #edeff3;">
+          <td style="padding:10px;">JPY</td>
+          <td style="padding:10px;">⭐⭐⭐⭐</td>
+          <td style="padding:10px;">Safe haven</td>
+          <td style="padding:10px;">Moderate</td>
+          <td style="padding:10px;">Risk-off flows</td>
+          <td style="padding:10px;">High</td>
+          <td style="padding:10px;">Repatriation flows</td>
+        </tr>
+
+        <tr style="border-bottom:1px solid #f3f5f8;">
+          <td style="padding:10px;">EUR</td>
+          <td style="padding:10px;">⭐⭐⭐⭐</td>
+          <td style="padding:10px;">Moderate</td>
+          <td style="padding:10px;">Low–Moderate</td>
+          <td style="padding:10px;">ECB policy</td>
+          <td style="padding:10px;">#2</td>
+          <td style="padding:10px;">Stable but political risk</td>
+        </tr>
+
+        <tr style="border-bottom:1px solid #f3f5f8;">
+          <td style="padding:10px;">CAD</td>
+          <td style="padding:10px;">⭐⭐⭐</td>
+          <td style="padding:10px;">No</td>
+          <td style="padding:10px;">Higher</td>
+          <td style="padding:10px;">Oil-linked</td>
+          <td style="padding:10px;">Small</td>
+          <td style="padding:10px;">Commodity-driven</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Allocation Table -->
+<div class="table-box">
+
+  <h2>Recommended Allocation of Free Cash Assets for Maximum Financial Security</h2>
+
+  <p style="color:#94a3b8;">
+     Stability-focused allocation with global diversification.
+  </p>
+
+ 
+   <div style="overflow-x:auto;">
+    <table style="width:80%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#1e293b;">
+          <th style="width:7%;padding:10px;">Currency</th>
+          <th style="width:10%;padding:10px;">Allocation %</th>
+          <th style="width:35%;padding:10px;">Crisis Type / Why</th>
+          <th style="width:35%;padding:10px;">Currency Strength</th>
+          <th style="width:40%;padding:10px;">How to Access </th>
+        </tr>
+      </thead>
       <tbody>
 
         <tr style="border-bottom:1px solid #334155;">
-          <td style="padding:12px;"><b>CHF (Swiss Franc)</b></td>
-          <td style="padding:12px;">30%</td>
-          <td style="padding:12px;">Strongest safe-haven, low inflation, long-term stability</td>
-          <td style="padding:12px;">Swissquote, UBS</td>
+          <td style="padding:10px;"><b>CHF</b></td>
+          <td style="padding:10px;">(20)-25</td>
+          <td style="padding:10px;">Systemic collapse/Hedging</td>
+          <th style="padding:10px;">Best safe haven</th>
+          <td style="padding:10px;">Swissquote, UBS</td>
         </tr>
 
         <tr style="border-bottom:1px solid #334155;">
-          <td style="padding:12px;"><b>SGD (Singapore Dollar)</b></td>
-          <td style="padding:12px;">20%</td>
-          <td style="padding:12px;">Extremely stable, managed float reduces volatility</td>
-          <td style="padding:12px;">HSBC Singapore, Standard Chartered</td>
+          <td style="padding:10px;"><b>SGD</b></td>
+          <td style="padding:10px;">(10)-15</td>
+          <th style="padding:10px;">US banking crisis/not tired to US/Europe cycles</th>
+          <td style="padding:10px;">Low volatility</td>
+          <td style="padding:10px;">HSBC, SCB</td>
         </tr>
 
         <tr style="border-bottom:1px solid #334155;">
-          <td style="padding:12px;"><b>USD (US Dollar)</b></td>
-          <td style="padding:12px;">20%</td>
-          <td style="padding:12px;">Global reserve, highest liquidity, crisis stability</td>
-          <td style="padding:12px;">Domestic banks, brokerages</td>
+          <td style="padding:10px;"><b>USD</b></td>
+          <td style="padding:10px;">50-(60)</td>
+          <th style="padding:10px;">Global panic/resident convenience</th>
+          <td style="padding:10px;">Liquidity and relatively safer and higher return in treasuries/MMFs</td>
+          <td style="padding:10px;">US banks</td>
         </tr>
 
         <tr style="border-bottom:1px solid #334155;">
-          <td style="padding:12px;"><b>EUR (Euro)</b></td>
-          <td style="padding:12px;">20%</td>
-          <td style="padding:12px;">Diversified across many economies, complements CHF</td>
-          <td style="padding:12px;">International banks, Wise</td>
+          <td style="padding:10px;"><b>EUR</b></td>
+          <td style="padding:10px;">0-(5)</td>
+          <th style="padding:10px;">US political upheaval/livestyle and relatively easy to reach</th>
+          <td style="padding:10px;">Jurisdiction diversification</td>
+          <td style="padding:10px;">Wise, banks</td>
         </tr>
 
-        <tr>
-          <td style="padding:12px;"><b>JPY (Japanese Yen)</b></td>
-          <td style="padding:12px;">10%</td>
-          <td style="padding:12px;">Safe-haven in crises, but more policy-driven volatility</td>
-          <td style="padding:12px;">Wise, Revolut, brokerage accounts</td>
+        <tr style="border-bottom:1px solid #334155;">
+          <td style="padding:10px;"><b>JPY</b></td>
+          <td style="padding:10px;">(5)-10</td>
+          <th style="padding:10px;">Short-term shock spike/proximity to China</th>
+          <td style="padding:10px;">Resilient in financial systems</td>
+          <td style="padding:10px;">Brokerage</td>
         </tr>
 
       </tbody>
     </table>
   </div>
-
 </div>
 </body>
 </html>
