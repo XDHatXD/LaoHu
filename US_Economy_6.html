@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USD Exchange Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f0f2f5; color: #1e293b; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        /* Summary Grid */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+        .stat-card { padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center; background: #fff; }
+        .stat-label { font-size: 0.7rem; font-weight: 800; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.3rem; font-weight: 700; color: #1e293b; }
+        .delta { font-size: 0.85rem; margin-top: 6px; font-weight: 600; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+        .pos { color: #059669; background: #ecfdf5; } /* Green: USD stronger */
+        .neg { color: #dc2626; background: #fef2f2; } /* Red: USD weaker */
+
+        .controls { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .controls strong { font-size: 0.9rem; color: #475569; }
+        button { padding: 8px 18px; border: 1px solid #e2e8f0; background: #fff; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 0.85rem; }
+        button.active { background: #2563eb; color: white; border-color: #2563eb; }
+        button:hover:not(.active) { background: #f8fafc; }
+
+        .api-info { background: #1e293b; color: #94a3b8; padding: 12px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.7rem; overflow-x: auto; border-left: 4px solid #3b82f6; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <strong>Time Range:</strong>
+        <button onclick="updateRange(90, this)">90D</button>
+        <button class="active" onclick="updateRange(365, this)">1Y</button>
+        <button onclick="updateRange(1825, this)">5Y</button>
+        <button onclick="updateRange('max', this)">MAX</button>
+    </div>
+
+    <div class="card">
+        <h2>Period Change (USD Basis)</h2>
+        <div id="summaryGrid" class="summary-grid"></div>
+    </div>
+
+    <div class="card">
+        <h2>Nominal Rates (JPY/100, CNY/10)</h2>
+        <div class="chart-container"><canvas id="nominalChart"></canvas></div>
+    </div>
+
+    <div class="card">
+        <h2>Relative Performance (Start = 1.0)</h2>
+        <div class="chart-container"><canvas id="relativeChart"></canvas></div>
+    </div>
+
+    <div class="api-info">
+        <strong>Frankfurter API:</strong> <span id="apiRequest"></span>
+    </div>
+</div>
+
+<script>
+    const nominalCtx = document.getElementById('nominalChart').getContext('2d');
+    const relativeCtx = document.getElementById('relativeChart').getContext('2d');
+    const summaryGrid = document.getElementById('summaryGrid');
+    const apiDisplay = document.getElementById('apiRequest');
+    
+    let nominalChart, relativeChart;
+    const quoteCurrencies = ['EUR', 'CHF', 'SGD', 'CNY', 'JPY'];
+    const colors = { 'EUR': '#3b82f6', 'CHF': '#ef4444', 'SGD': '#10b981', 'CNY': '#f59e0b', 'JPY': '#8b5cf6' };
+
+    async function fetchData(range) {
+        const to = new Date().toISOString().split('T')[0];
+        let from;
+
+        if (range === 'max') {
+            from = '1999-01-04'; // Frankfurter's start date
+        } else {
+            const fromDate = new Date();
+            fromDate.setDate(fromDate.getDate() - range);
+            from = fromDate.toISOString().split('T')[0];
+        }
+
+        const url = `https://api.frankfurter.app/${from}..${to}?from=USD&to=${quoteCurrencies.join(',')}`;
+        apiDisplay.textContent = url;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            updateDashboard(data);
+        } catch (e) { console.error("Fetch error:", e); }
+    }
+
+    function updateDashboard(data) {
+        const dates = Object.keys(data.rates);
+        const startDay = dates[0];
+        const endDay = dates[dates.length - 1];
+
+        // 1. Update Summary Grid with requested label style
+        summaryGrid.innerHTML = '';
+        quoteCurrencies.forEach(sym => {
+            const startVal = data.rates[startDay][sym];
+            const endVal = data.rates[endDay][sym];
+            const pctChange = ((endVal - startVal) / startVal * 100).toFixed(2);
+            const isUp = pctChange >= 0;
+
+            summaryGrid.innerHTML += `
+                <div class="stat-card">
+                    <div class="stat-label">USD → ${sym}</div>
+                    <div class="stat-value">${endVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</div>
+                    <div class="delta ${isUp ? 'pos' : 'neg'}">
+                        ${isUp ? '▲' : '▼'} ${Math.abs(pctChange)}%
+                    </div>
+                </div>
+            `;
+        });
+
+        // 2. Prepare Datasets
+        const nominalDS = [];
+        const relativeDS = [];
+
+        quoteCurrencies.forEach(sym => {
+            const isJPY = sym === 'JPY', isCNY = sym === 'CNY';
+            const firstRate = data.rates[startDay][sym];
+
+            nominalDS.push({
+                label: sym + (isJPY ? ' (÷100)' : isCNY ? ' (÷10)' : ''),
+                data: dates.map(d => {
+                    let val = data.rates[d][sym];
+                    return isJPY ? val/100 : (isCNY ? val/10 : val);
+                }),
+                borderColor: colors[sym], backgroundColor: 'transparent', borderWidth: 2, tension: 0.1, pointRadius: 0
+            });
+
+            relativeDS.push({
+                label: sym,
+                data: dates.map(d => data.rates[d][sym] / firstRate),
+                borderColor: colors[sym], backgroundColor: 'transparent', borderWidth: 2, tension: 0.1, pointRadius: 0
+            });
+        });
+
+        // 3. Re-render Charts
+        if (nominalChart) nominalChart.destroy();
+        if (relativeChart) relativeChart.destroy();
+
+        const commonOptions = { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        };
+
+        nominalChart = new Chart(nominalCtx, { type: 'line', data: { labels: dates, datasets: nominalDS }, options: commonOptions });
+        relativeChart = new Chart(relativeCtx, { 
+            type: 'line', 
+            data: { labels: dates, datasets: relativeDS }, 
+            options: { 
+                ...commonOptions, 
+                scales: { y: { grid: { color: c => c.tick.value === 1 ? '#000' : '#e2e8f0' }}} 
+            } 
+        });
+    }
+
+    function updateRange(range, btn) {
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        fetchData(range);
+    }
+
+    fetchData(365);
+</script>
+</body>
+</html>
