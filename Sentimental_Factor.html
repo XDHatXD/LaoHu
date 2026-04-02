@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Sentiment Dashboard - DIY CSF Live</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.min.js"></script>
+<style>
+body { font-family: Arial; background:#0f172a; color:#fff; margin:0; }
+.container { padding:20px; }
+.card { background:#1e293b; padding:20px; border-radius:16px; margin-bottom:16px; }
+.row { display:flex; gap:16px; flex-wrap:wrap; }
+.col { flex:1; min-width:200px; }
+.value { font-size:36px; font-weight:bold; }
+.small { opacity:.8; font-size:14px; }
+canvas { background:#111827; border-radius:10px; max-height:300px; }
+input { background:#0b1220; color:#fff; border:1px solid #334155; border-radius:8px; padding:6px 8px; }
+button { background:#2563eb; color:#fff; border:none; border-radius:8px; padding:8px 10px; cursor:pointer; }
+.headline { font-size:40px; font-weight:bold; margin-bottom:20px; text-align:center; color:#facc15; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="headline">AI Market Sentiment Dashboard (DIY CSF)</div>
+<div class="card">
+  <div class="row">
+    <div class="col">
+      <div class="small">Composite Sentiment Factor (DIY CSF)</div>
+      <div id="csf" class="value">--</div>
+      <div id="signal"></div>
+      <div id="trend" class="small"></div>
+    </div>
+    <div class="col">
+      <div class="small">Fear & Greed Index (CNN FG)</div>
+      <div id="fgDisplay" class="value">--</div>
+      <div class="small">VIX</div>
+      <div id="vixDisplay" class="value">--</div>
+      <div class="small">Manual Fear Factor</div>
+      <input type="number" id="manualFG" placeholder="0-100" min="0" max="100" />
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="small">DIY CSF Time Series</div>
+  <canvas id="lineChart"></canvas>
+</div>
+<script>
+const FINNHUB_KEY = 'd6qqkmpr01qgdhqc0ol0d6qqkmpr01qgdhqc0olg';
+const FRED_KEY = '586b60806b6165a523f3854547237861';
+const REFRESH_MS = 60000;
+let prevCSFValue = 50;
+let hist = [];
+
+async function fetchCNNFG(){
+  try {
+    const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://money.cnn.com/data/fear-and-greed/');
+    const r = await fetch(url);
+    const html = await r.text();
+    const match = html.match(/"fearGreedCurrent":\s*(\d+)/);
+    return match ? parseInt(match[1]) : 50;
+  } catch(e){
+    console.error('FG fetch error', e);
+    return 50;
+  }
+}
+
+async function fetchVIX(){
+  try {
+    const proxy = 'https://corsproxy.io/?';
+    const url = proxy + encodeURIComponent(`https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&api_key=${FRED_KEY}&file_type=json&sort_order=desc&limit=1`);
+    const res = await fetch(url);
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e){ console.error('FRED returned non-JSON:', text); return 20; }
+    return parseFloat(data.observations[0].value);
+  } catch(e){
+    console.error('VIX fetch error', e);
+    return 20;
+  }
+}
+
+async function fetchPCR(){
+  try{
+    const url = `https://finnhub.io/api/v1/indicator/option-pcr?symbol=SPY&token=${FINNHUB_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data && data.pcr && data.pcr.length>0){
+      return data.pcr[data.pcr.length-1];
+    }
+    return 0.7;
+  } catch(e){ console.error('PCR fetch error', e); return 0.7; }
+}
+
+function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
+
+function computeDIYCSF({fg,vix,pcr}){
+  const fgScore = 100 - fg;
+  const vixScore = vix;
+  const pcrScore = pcr*100;
+  let csfRaw = 0.4*fgScore + 0.3*vixScore + 0.3*pcrScore;
+  const alpha = 0.3;
+  prevCSFValue = prevCSFValue*(1-alpha) + csfRaw*alpha;
+  return Math.round(prevCSFValue);
+}
+
+function signal(csf){
+  if(csf>=70) return {t:'GREED → SELL', c:'#22c55e', a:'↑'};
+  if(csf<=30) return {t:'FEAR → BUY', c:'#ef4444', a:'↓'};
+  return {t:'NEUTRAL', c:'#facc15', a:'→'};
+}
+
+function renderHeader(csf, fg, vix){
+  const s = signal(csf);
+  document.getElementById('csf').innerText = csf + ' ' + s.a;
+  document.getElementById('csf').style.color = s.c;
+  document.getElementById('signal').innerText = s.t;
+  document.getElementById('signal').style.color = s.c;
+  document.getElementById('trend').innerText = csf-prevCSFValue>0?'Improving ↑':'Deteriorating ↓';
+  document.getElementById('fgDisplay').innerText = fg;
+  document.getElementById('vixDisplay').innerText = vix.toFixed(2);
+}
+
+let lineChart;
+function renderLine(){
+  const ctx = document.getElementById('lineChart');
+  if(lineChart) lineChart.destroy();
+  const labels = hist.map(x=>x.t);
+  const csfData = hist.map(x=>x.csf);
+  lineChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[ {label:'DIY CSF', data:csfData, borderColor:'#facc15', backgroundColor:'#facc1550'} ]},
+    options:{scales:{y:{beginAtZero:true}}}
+  });
+}
+
+async function tick(){
+  try{
+    const [fgRaw,vix,pcr] = await Promise.all([fetchCNNFG(), fetchVIX(), fetchPCR()]);
+    const manualFG = parseInt(document.getElementById('manualFG').value);
+    const fg = !isNaN(manualFG) ? manualFG : (fgRaw!=null?fgRaw:50);
+    const csf = computeDIYCSF({fg,vix,pcr});
+    renderHeader(csf, fg, vix);
+    const now = new Date().toLocaleTimeString();
+    hist.push({t:now, csf});
+    if(hist.length>60) hist.shift();
+    renderLine();
+  }catch(e){ console.error(e); document.getElementById('signal').innerText='⚠️ API error'; }
+}
+
+tick();
+setInterval(tick, REFRESH_MS);
+</script>
+</body>
+</html>
